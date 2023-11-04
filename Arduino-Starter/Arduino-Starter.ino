@@ -1,5 +1,5 @@
 // Replace 12345 with the correct team number and then uncomment the line below.
-//#define TEAM_NUMBER 12345
+#define TEAM_NUMBER 8
 
 #ifndef TEAM_NUMBER
 #error "Define your team number with `#define TEAM_NUMBER 12345` at the top of the file."
@@ -9,6 +9,28 @@
 
 void setup() {
   Serial.begin(115200);
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+
+void arcadeDrive(float thrust, float rotation) {
+  thrust = abs(thrust) > 0.05 ? thrust : 0;
+  rotation = abs(rotation) > 0.05 ? rotation : 0;
+
+  thrust = pow(thrust, 3);
+  rotation = pow(rotation, 3);
+
+  Serial.print(thrust);
+  Serial.println();
+  Serial.print(rotation);
+  Serial.println();
+
+  RR_setMotor1(thrust + rotation);
+  RR_setMotor2(thrust - rotation);
+}
+
+void score_piece() {
+  // run certain motor forwards
+  // run certain motor backwards
 }
 
 int temp = 0;
@@ -24,8 +46,10 @@ void loop() {
   // Arcade-drive scheme
   // Left Y-axis = throttle
   // Right X-axis = steering
-  RR_setMotor1(leftY + rightX);
-  RR_setMotor2(leftY - rightX);
+  // RR_setMotor1(leftY + rightX);
+  // RR_setMotor2(leftY - rightX);
+
+  arcadeDrive(leftY, rightX);
 
   // Get the button states
   bool btnA = RR_buttonA();
@@ -37,14 +61,20 @@ void loop() {
 
   // Control motor3 port (unused on base robot) using A/B buttons
   if (btnA) {
+    Serial.write("HELLLOOOOO A \n");
+    digitalWrite(LED_BUILTIN, HIGH);
     RR_setMotor3(1.0);
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
   }
-  else if (btnB) {
-    RR_setMotor3(-1.0);
+
+  // score
+  if (btnB) {
+    score_piece();
   }
-  else {
-    RR_setMotor3(0.0);
-  }
+  // else {
+  //   RR_setMotor3(0.0);
+  // }
 
   // Control motor4 port (unused on base robot) using X/Y buttons
   if (btnX) {
