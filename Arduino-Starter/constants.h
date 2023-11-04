@@ -1,5 +1,5 @@
-constexpr int INTAKE_SERVO_ANGLE = 0;
-constexpr int SCORE_SERVO_ANGLE = 180;
+constexpr int INTAKE_SERVO_ANGLE = 45;
+constexpr int SCORE_SERVO_ANGLE = 120;
 constexpr int DEFAULT_SERVO_ANGLE = 90;
 
 /* AUTO CONSTANTS */
