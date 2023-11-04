@@ -85,6 +85,30 @@ void arcadeDrive(float thrust, float rotation) {
   RR_setMotor2(thrust - rotation);
 }
 
+void debugPrints() {
+  Serial.print("Ultrasonic=");
+  Serial.print(RR_getUltrasonic());
+  Serial.print(" ;; ");
+  int sensors[6];
+
+  Serial.print("Line sensors=");
+  RR_getLineSensors(sensors);
+  for (int i = 0; i < 6; ++i) {
+    Serial.print(sensors[i]);
+    Serial.print(" ");
+  }
+
+
+  //follows line
+  // line_follow(sensors);
+
+  Serial.print(btnA ? 1 : 0);
+  Serial.print(btnB ? 1 : 0);
+  Serial.print(btnX ? 1 : 0);
+  Serial.print(btnY ? 1 : 0);
+  Serial.println();
+}
+
 /* --- AUTO COMMANDS --- */
 
 void scorePieceAuto() {
@@ -134,28 +158,7 @@ void loop() {
   }
 
   // read the ultrasonic sensors
-
-  Serial.print("Ultrasonic=");
-  Serial.print(RR_getUltrasonic());
-  Serial.print(" ;; ");
-  int sensors[6];
-
-  Serial.print("Line sensors=");
-  RR_getLineSensors(sensors);
-  for (int i = 0; i < 6; ++i) {
-    Serial.print(sensors[i]);
-    Serial.print(" ");
-  }
-
-
-  //follows line
-  // line_follow(sensors);
-
-  Serial.print(btnA ? 1 : 0);
-  Serial.print(btnB ? 1 : 0);
-  Serial.print(btnX ? 1 : 0);
-  Serial.print(btnY ? 1 : 0);
-  Serial.println();
+  // debugPrints();
 
   // This is important - it sleeps for 0.02 seconds (= 50 times / second)
   // Running the code too fast will overwhelm the microcontroller and peripherals
