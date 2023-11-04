@@ -1,3 +1,5 @@
+#include "constants.h"
+
 // Replace 12345 with the correct team number and then uncomment the line below.
 #define TEAM_NUMBER 8
 
@@ -7,11 +9,6 @@
 #error "Team number must be within 1 and 20"
 #endif
 
-int intakeServoAngle = 30;
-int scoreServoAngle = 150;
-int defaultServoAngle = 90;
-
-long scoreTime = 500; // ms
 
 void setup() {
   Serial.begin(115200);
@@ -51,15 +48,15 @@ void setServo(int angle) {
 }
 
 void setServoIntake() {
-  setServo(intakeServoAngle);
+  setServo(INTAKE_SERVO_ANGLE);
 }
 
 void setServoScore() {
-  setServo(scoreServoAngle);
+  setServo(SCORE_SERVO_ANGLE);
 }
 
 void setServoDefault() {
-  setServo(defaultServoAngle);
+  setServo(DEFAULT_SERVO_ANGLE);
 }
 
 float getUltrasonic() {
@@ -85,7 +82,7 @@ void arcadeDrive(float thrust, float rotation) {
   RR_setMotor2(thrust - rotation);
 }
 
-void debugPrints() {
+void debugPrints(bool btnA, bool btnB, bool btnX, bool btnY) {
   Serial.print("Ultrasonic=");
   Serial.print(RR_getUltrasonic());
   Serial.print(" ;; ");
@@ -113,9 +110,26 @@ void debugPrints() {
 
 void scorePieceAuto() {
   setServoScore();
-  delay(scoreTime);
+  delay(SCORE_TIME);
   setServoDefault();
 }
+
+void move_forward() {
+  RR_setMotor1(DRIVE_FORWARD_POWER);
+  RR_setMotor2(DRIVE_FORWARD_POWER);
+}
+
+void move_left() {
+  RR_setMotor1(TURN_BACKWARD_POWER);
+  RR_setMotor2(TURN_FORWARD_POWER);
+}
+
+void move_right() {
+  RR_setMotor1(TURN_FORWARD_POWER);
+  RR_setMotor2(TURN_BACKWARD_POWER);
+}
+
+/* --- END AUTO COMMANDS --- */
 
 int temp = 0;
 
@@ -157,8 +171,16 @@ void loop() {
     setServo(90);
   }
 
+  if (btnX) {
+    move_left();
+  } else if (btnY) {
+    move_right();
+  } else if (btnB) {
+    move_forward();
+  }
+
   // read the ultrasonic sensors
-  // debugPrints();
+  // debugPrints(btnA, btnB, btnX, btnY);
 
   // This is important - it sleeps for 0.02 seconds (= 50 times / second)
   // Running the code too fast will overwhelm the microcontroller and peripherals
@@ -211,23 +233,7 @@ void line_follow_stop(int sensors[6]) {
   }
 }
 
-void move_forward() {
-  // in development -- set it to go forward
-  // RR_setMotor1(leftY + rightX);
-  // RR_setMotor2(leftY - rightX);
-}
 
-void move_left() {
-  // in development -- set it to go forward
-  // RR_setMotor1(leftY + rightX);
-  // RR_setMotor2(leftY - rightX);
-}
-
-void move_right() {
-  // in development -- set it to go forward
-  // RR_setMotor1(leftY + rightX);
-  // RR_setMotor2(leftY - rightX);
-}
 
 
 // vim: tabstop=2 shiftwidth=2 expandtab
