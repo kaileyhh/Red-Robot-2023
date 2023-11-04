@@ -132,6 +132,11 @@ void loop() {
     Serial.print(sensors[i]);
     Serial.print(" ");
   }
+
+
+  //follows line
+  line_follow(sensors);
+
   Serial.print(btnA ? 1 : 0);
   Serial.print(btnB ? 1 : 0);
   Serial.print(btnX ? 1 : 0);
@@ -141,6 +146,52 @@ void loop() {
   // This is important - it sleeps for 0.02 seconds (= 50 times / second)
   // Running the code too fast will overwhelm the microcontroller and peripherals
   delay(20);
+}
+
+void line_follow(int sensors[6]) {
+  //precondition: sensor is set such that the black line is in front
+
+  if (sl == LOW && sr == LOW) {
+    //black line in between
+    move_forward();
+  }
+  if (sl == HIGH && sr == LOW) {
+    // curves left
+    move_left();
+  }
+  if (sl == LOW && sr == HIGH) {
+    // curves right
+    move_right();
+  }
+  if (sl == HIGH && sr == HIGH) {
+    // issue 
+    stop_rr();
+    //or forward
+  }
+}
+
+void move_forward() {
+  // in development -- set it to go forward
+  RR_setMotor1(leftY + rightX);
+  RR_setMotor2(leftY - rightX);
+}
+
+void move_left() {
+  // in development -- set it to go forward
+  RR_setMotor1(leftY + rightX);
+  RR_setMotor2(leftY - rightX);
+}
+
+void move_right() {
+  // in development -- set it to go forward
+  RR_setMotor1(leftY + rightX);
+  RR_setMotor2(leftY - rightX);
+}
+
+void stop_rr() {
+  // in development -- set it to go forward
+  RR_setMotor1(0);
+  RR_setMotor2(0);
 }
 
 // vim: tabstop=2 shiftwidth=2 expandtab
