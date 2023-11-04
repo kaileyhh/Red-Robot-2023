@@ -159,50 +159,72 @@ void loop() {
   delay(20);
 }
 
-// void line_follow(int sensors[6]) {
-//   //precondition: sensor is set such that the black line is in front
+void line_follow(int sensors[6]) {
+  //precondition: sensor is set such that the black line is in front
 
-//   if (sl == LOW && sr == LOW) {
-//     //black line in between
-//     move_forward();
-//   }
-//   if (sl == HIGH && sr == LOW) {
-//     // curves left
-//     move_left();
-//   }
-//   if (sl == LOW && sr == HIGH) {
-//     // curves right
-//     move_right();
-//   }
-//   if (sl == HIGH && sr == HIGH) {
-//     // issue 
-//     stop_rr();
-//     //or forward
-//   }
-// }
+  if (sl == LOW && sr == LOW) {
+    //black line in between
+    move_forward();
+  }
+  if (sl == HIGH && sr == LOW) {
+    // curves left
+    move_left();
+  }
+  if (sl == LOW && sr == HIGH) {
+    // curves right
+    move_right();
+  }
+  if (sl == HIGH && sr == HIGH) {
+    // issue 
+    move_forward();
+    //or forward
+  }
+}
 
-// void move_forward() {
-//   // in development -- set it to go forward
-//   RR_setMotor1(leftY + rightX);
-//   RR_setMotor2(leftY - rightX);
-// }
+void line_follow_stop(int sensors[6]) {
+    if (sl == LOW && sr == LOW) {
+    //black line in between
+    move_forward();
+  }
+  if (sl == HIGH && sr == LOW) {
+    // curves left
+    move_left();
+  }
+  if (sl == LOW && sr == HIGH) {
+    // curves right
+    move_right();
+  }
+  if (sl == HIGH && sr == HIGH) {
+    // issue 
+    stop_rr();
+    delay(6000);
+    move_forward();
+    //or forward
+  }
+}
 
-// void move_left() {
-//   // in development -- set it to go forward
-//   RR_setMotor1(leftY + rightX);
-//   RR_setMotor2(leftY - rightX);
-// }
+void move_forward() {
+  // in development -- set it to go forward
+  RR_setMotor1(leftY + rightX);
+  RR_setMotor2(leftY - rightX);
+}
 
-// void move_right() {
-//   // in development -- set it to go forward
-//   RR_setMotor1(leftY + rightX);
-//   RR_setMotor2(leftY - rightX);
-// }
+void move_left() {
+  // in development -- set it to go forward
+  RR_setMotor1(leftY + rightX);
+  RR_setMotor2(leftY - rightX);
+}
 
-// void stop_rr() {
-//   // in development -- set it to go forward
-//   RR_setMotor1(0);
-//   RR_setMotor2(0);
-// }
+void move_right() {
+  // in development -- set it to go forward
+  RR_setMotor1(leftY + rightX);
+  RR_setMotor2(leftY - rightX);
+}
+
+void stop_rr() {
+  // in development -- set it to go forward
+  RR_setMotor1(0);
+  RR_setMotor2(0);
+}
 
 // vim: tabstop=2 shiftwidth=2 expandtab
