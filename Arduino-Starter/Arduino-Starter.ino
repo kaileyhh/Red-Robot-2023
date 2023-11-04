@@ -12,12 +12,23 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
-void arcadeDrive(float thrust, float rotation) {
-  thrust = abs(thrust) > 0.05 ? thrust : 0;
-  rotation = abs(rotation) > 0.05 ? rotation : 0;
+float clamp(float in, float min, float max) {
+  if (in > max) {
+    return max;
+  }
+  if (in < min) {
+    return min;
+  }
+  return in;
+}
 
-  thrust = pow(thrust, 3);
-  rotation = pow(rotation, 3);
+void arcadeDrive(float thrust, float rotation) {
+  // rotation = clamp(rotation, -0.5, 0.5);
+  thrust = abs(thrust) > 0.005 ? thrust : 0;
+  rotation = abs(rotation) > 0.005 ? rotation : 0;
+
+  // thrust = pow(thrust, 3);
+  // rotation = pow(rotation, 3);
 
   Serial.print(thrust);
   Serial.println();
@@ -135,7 +146,7 @@ void loop() {
 
 
   //follows line
-  line_follow(sensors);
+  // line_follow(sensors);
 
   Serial.print(btnA ? 1 : 0);
   Serial.print(btnB ? 1 : 0);
@@ -148,50 +159,50 @@ void loop() {
   delay(20);
 }
 
-void line_follow(int sensors[6]) {
-  //precondition: sensor is set such that the black line is in front
+// void line_follow(int sensors[6]) {
+//   //precondition: sensor is set such that the black line is in front
 
-  if (sl == LOW && sr == LOW) {
-    //black line in between
-    move_forward();
-  }
-  if (sl == HIGH && sr == LOW) {
-    // curves left
-    move_left();
-  }
-  if (sl == LOW && sr == HIGH) {
-    // curves right
-    move_right();
-  }
-  if (sl == HIGH && sr == HIGH) {
-    // issue 
-    stop_rr();
-    //or forward
-  }
-}
+//   if (sl == LOW && sr == LOW) {
+//     //black line in between
+//     move_forward();
+//   }
+//   if (sl == HIGH && sr == LOW) {
+//     // curves left
+//     move_left();
+//   }
+//   if (sl == LOW && sr == HIGH) {
+//     // curves right
+//     move_right();
+//   }
+//   if (sl == HIGH && sr == HIGH) {
+//     // issue 
+//     stop_rr();
+//     //or forward
+//   }
+// }
 
-void move_forward() {
-  // in development -- set it to go forward
-  RR_setMotor1(leftY + rightX);
-  RR_setMotor2(leftY - rightX);
-}
+// void move_forward() {
+//   // in development -- set it to go forward
+//   RR_setMotor1(leftY + rightX);
+//   RR_setMotor2(leftY - rightX);
+// }
 
-void move_left() {
-  // in development -- set it to go forward
-  RR_setMotor1(leftY + rightX);
-  RR_setMotor2(leftY - rightX);
-}
+// void move_left() {
+//   // in development -- set it to go forward
+//   RR_setMotor1(leftY + rightX);
+//   RR_setMotor2(leftY - rightX);
+// }
 
-void move_right() {
-  // in development -- set it to go forward
-  RR_setMotor1(leftY + rightX);
-  RR_setMotor2(leftY - rightX);
-}
+// void move_right() {
+//   // in development -- set it to go forward
+//   RR_setMotor1(leftY + rightX);
+//   RR_setMotor2(leftY - rightX);
+// }
 
-void stop_rr() {
-  // in development -- set it to go forward
-  RR_setMotor1(0);
-  RR_setMotor2(0);
-}
+// void stop_rr() {
+//   // in development -- set it to go forward
+//   RR_setMotor1(0);
+//   RR_setMotor2(0);
+// }
 
 // vim: tabstop=2 shiftwidth=2 expandtab
