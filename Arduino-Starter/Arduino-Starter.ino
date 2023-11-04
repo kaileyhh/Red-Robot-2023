@@ -7,6 +7,12 @@
 #error "Team number must be within 1 and 20"
 #endif
 
+int intakeServoAngle = 30;
+int scoreServoAngle = 150;
+int defaultServoAngle = 90;
+
+long scoreTime = 500; // ms
+
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -14,12 +20,60 @@ void setup() {
 
 float clamp(float in, float min, float max) {
   if (in > max) {
+    Serial.write("clamp exceed max\n");
     return max;
   }
   if (in < min) {
+    Serial.write("clamp exceed min\n");
     return min;
   }
   return in;
+}
+
+int clamp_int(int in, int min, int max) {
+  if (in > max) {
+    Serial.write("clamp exceed max\n");
+    return max;
+  }
+  if (in < min) {
+    Serial.write("clamp exceed min\n");
+    return min;
+  }
+  return in;
+}
+
+void setServo(int angle) {
+  Serial.print("setting servo: ");
+  angle = clamp_int(angle, 0, 180);
+  Serial.print(angle);
+  Serial.print("\n");
+  RR_setServo3(angle);
+}
+
+void setServoIntake() {
+  setServo(intakeServoAngle);
+}
+
+void setServoScore() {
+  setServo(scoreServoAngle);
+}
+
+void setServoDefault() {
+  setServo(defaultServoAngle);
+}
+
+float getUltrasonic() {
+  return RR_getUltrasonic();
+}
+
+bool isUltrasonicActivated() {
+  // make 100.0 a real number;
+  return getUltrasonic() > 100.0;
+}
+
+void stopDrivetrain() {
+  RR_setMotor1(0.0);
+  RR_setMotor2(0.0);
 }
 
 void arcadeDrive(float thrust, float rotation) {
@@ -27,21 +81,16 @@ void arcadeDrive(float thrust, float rotation) {
   thrust = abs(thrust) > 0.005 ? thrust : 0;
   rotation = abs(rotation) > 0.005 ? rotation : 0;
 
-  // thrust = pow(thrust, 3);
-  // rotation = pow(rotation, 3);
-
-  Serial.print(thrust);
-  Serial.println();
-  Serial.print(rotation);
-  Serial.println();
-
   RR_setMotor1(thrust + rotation);
   RR_setMotor2(thrust - rotation);
 }
 
-void score_piece() {
-  // run certain motor forwards
-  // run certain motor backwards
+/* --- AUTO COMMANDS --- */
+
+void scorePieceAuto() {
+  setServoScore();
+  delay(scoreTime);
+  setServoDefault();
 }
 
 int temp = 0;
@@ -54,12 +103,6 @@ void loop() {
   float leftX  = RR_axisLX();
   float leftY  = RR_axisLY();
 
-  // Arcade-drive scheme
-  // Left Y-axis = throttle
-  // Right X-axis = steering
-  // RR_setMotor1(leftY + rightX);
-  // RR_setMotor2(leftY - rightX);
-
   arcadeDrive(leftY, rightX);
 
   // Get the button states
@@ -70,7 +113,7 @@ void loop() {
   bool btnRB = RR_buttonRB();
   bool btnLB = RR_buttonLB();
 
-  // Control motor3 port (unused on base robot) using A/B buttons
+
   if (btnA) {
     Serial.write("HELLLOOOOO A \n");
     digitalWrite(LED_BUILTIN, HIGH);
@@ -79,56 +122,16 @@ void loop() {
     digitalWrite(LED_BUILTIN, LOW);
   }
 
-  // score
-  if (btnB) {
-    score_piece();
+  // left bumper - intake
+  if (btnLB) {
+    setServo(0);
   }
-  // else {
-  //   RR_setMotor3(0.0);
-  // }
-
-  // Control motor4 port (unused on base robot) using X/Y buttons
-  if (btnX) {
-    RR_setMotor4(1.0);
+  // right bumper - score
+  else if (btnRB) {
+    setServo(180);
+  } else {
+    setServo(90);
   }
-  else if (btnY) {
-    RR_setMotor4(-1.0);
-  }
-  else {
-    RR_setMotor4(0.0);
-  }
-
-  // Control servo 1 using the dpad
-  // 6 = left, 2 = right, 0 = up, 4 = down, 8 = center
-  // (note that you will also see the value 0 if the controller
-  //  is disconnected)
-  if (RR_dpad() == 6) { // left
-
-    // we can't move a servo less than 0 degrees
-    if (temp > 0) temp -= 10;
-  }
-  else if (RR_dpad() == 2) { // right
-
-    // we can't move a servo past 180 degrees
-    // for continuous rotation, try using a DC motor
-    if (temp < 180) temp += 10;
-  }
-  RR_setServo1(temp);
-
-  // Control servo 2 using the shoulder buttons
-  // This example moves the servo to fixed points
-  // You can change the angles based on your mechanism
-  // (this is great for a mechanism that only has 2 states,
-  //  such as a grabber or hook)
-  if (btnRB) {
-    RR_setServo2(180);
-  }
-  else if (btnLB) {
-    RR_setServo2(0);
-  }
-
-  // we also have RR_setServo3 and RR_setServo4 available
-
 
   // read the ultrasonic sensors
 
@@ -196,7 +199,7 @@ void line_follow_stop(int sensors[6]) {
   }
   if (sl == HIGH && sr == HIGH) {
     // issue 
-    stop_rr();
+    stopDrivetrain();
     delay(6000);
     move_forward();
     //or forward
@@ -221,10 +224,5 @@ void move_right() {
   RR_setMotor2(leftY - rightX);
 }
 
-void stop_rr() {
-  // in development -- set it to go forward
-  RR_setMotor1(0);
-  RR_setMotor2(0);
-}
 
 // vim: tabstop=2 shiftwidth=2 expandtab
