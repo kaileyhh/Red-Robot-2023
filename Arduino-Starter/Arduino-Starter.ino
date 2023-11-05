@@ -18,9 +18,15 @@ bool prevLB; //to see if LB pressed (not held down)
 float lastVal;
 float lastError;
 
-float kP = 0.00025;
-float kD = 0.00003;
+float kP = 0.00025; // 0.00025
+float kD = 0.00003; // 0.00007
+
+bool isAuto;
+bool prevA;
 // float kD = 0.0;
+
+float currServo1Angle = DEFAULT_SERVO_ANGLE_1;
+float currServo4Angle = DEFAULT_SERVO_ANGLE_4;
 
 int sensors[6];
 
@@ -49,24 +55,40 @@ int clamp_int(int in, int min, int max) {
   return in;
 }
 
-void setServo(int angle) {
+void setServo(int angle1, int angle4) {
   Serial.print("setting servo: ");
-  angle = clamp_int(angle, 0, 180);
-  Serial.print(angle);
+  angle1 = clamp_int(angle1, 0, 180);
+  angle4 = clamp_int(angle4, 0, 180);
+  Serial.print(angle1);
+  Serial.print(", ");
+  Serial.print(angle4);
   Serial.print("\n");
-  RR_setServo3(angle);
+  RR_setServo1(angle1);
+  RR_setServo4(angle4);
+}
+
+void setGlobalServoAngles(int angle1, int angle4) {
+  currServo1Angle = angle1;
+  currServo4Angle = angle4;
+}
+
+void setServosToGlobal() {
+  setServo(currServo1Angle, currServo4Angle);
 }
 
 void setServoIntake() {
-  setServo(INTAKE_SERVO_ANGLE);
+  setGlobalServoAngles(INTAKE_SERVO_ANGLE_1, INTAKE_SERVO_ANGLE_4);
+  setServo(INTAKE_SERVO_ANGLE_1, INTAKE_SERVO_ANGLE_4);
 }
 
 void setServoScore() {
-  setServo(SCORE_SERVO_ANGLE);
+  setGlobalServoAngles(SCORE_SERVO_ANGLE_1, SCORE_SERVO_ANGLE_4);
+  setServo(SCORE_SERVO_ANGLE_1, SCORE_SERVO_ANGLE_4);
 }
 
 void setServoDefault() {
-  setServo(DEFAULT_SERVO_ANGLE);
+  setGlobalServoAngles(DEFAULT_SERVO_ANGLE_1, DEFAULT_SERVO_ANGLE_4);
+  setServo(DEFAULT_SERVO_ANGLE_1, DEFAULT_SERVO_ANGLE_4);
 }
 
 float getUltrasonic() {
@@ -175,6 +197,9 @@ void setup() {
   prevLB = false;
   lastVal = 2500.0;
   lastError = 0.0;
+
+  prevA = false;
+  isAuto = false;
 }
 
 int temp = 0;
@@ -198,47 +223,37 @@ void loop() {
   bool btnLB = RR_buttonLB();
 
 
-  // if (btnA) {
-  //   Serial.write("HELLLOOOOO A \n");
-  //   digitalWrite(LED_BUILTIN, HIGH);
-  //   RR_setMotor3(1.0);
-  // } else {
-  //   digitalWrite(LED_BUILTIN, LOW);
-  // }
-
-  // left bumper - intake
-  if (btnLB && btnLB != prevLB) { //if the button is being pressed and it is just pressed
-    if (isServoIntake) { //if the servo is in intake position
-      setServoDefault(); // set servo to default
-    } else {  //servo is in default position
-      setServoIntake(); //intake
-    }
-    isServoIntake = !isServoIntake; //set servo intake boolean to reverse it later
-    isServoScore = false; //score is false so if in score position, then if pressed score, will not set to default
-  }
-  // right bumper - score
-  if (btnRB && btnRB != prevRB) { //same logic for score
-    if (isServoScore) {
-      setServoDefault();
-    } else {
-      setServoScore();
-    }
-    isServoScore = !isServoScore;
-    isServoIntake = false;
-  } 
-
-  if (btnX) {
-    move_left();
-  } else if (btnY) {
-    move_right();
-  } else if (btnB) {
-    move_forward();
+  // ------------------ SET AUTO ------------------
+  if (btnA && btnA != prevA) {
+    isAuto = !isAuto;
   }
 
-  // read the ultrasonic sensors
-  if (btnA) {
+  if (isAuto) {
     line_follow_pid(sensors);
     debugPrints(btnA, btnB, btnX, btnY);
+  } else {
+    // left bumper - intake
+    if (btnLB && btnLB != prevLB) { //if the button is being pressed and it is just pressed
+      if (isServoIntake) { //if the servo is in intake position
+        setServoDefault(); // set servo to default
+      } else {  //servo is in default position
+        setServoIntake(); //intake
+      }
+      isServoIntake = !isServoIntake; //set servo intake boolean to reverse it later
+      isServoScore = false; //score is false so if in score position, then if pressed score, will not set to default
+    }
+    // right bumper - score
+    if (btnRB && btnRB != prevRB) { //same logic for score
+      if (isServoScore) {
+        setServoDefault();
+      } else {
+        setServoScore();
+      }
+      isServoScore = !isServoScore;
+      isServoIntake = false;
+    } 
+
+    setServosToGlobal();
   }
   
 
@@ -246,6 +261,7 @@ void loop() {
   // Running the code too fast will overwhelm the microcontroller and peripherals
   prevLB = btnLB;
   prevRB = btnRB;
+  prevA = btnA;
   delay(20);
 }
 
