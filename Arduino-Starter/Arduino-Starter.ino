@@ -18,17 +18,20 @@ bool prevLB; //to see if LB pressed (not held down)
 float lastVal;
 float lastError;
 
-float kP = 0.00025; // 0.00025
+float kP = 0.00025; // 0.00025; // 0.00025
 float kD = 0.00003; // 0.00007
 
 bool isAuto;
 bool prevA;
+
+bool scoredPieceInAuto;
 // float kD = 0.0;
 
 float currServo1Angle = DEFAULT_SERVO_ANGLE_1;
 float currServo4Angle = DEFAULT_SERVO_ANGLE_4;
 
 int sensors[6];
+int start_time;
 
 
 float clamp(float in, float min, float max) {
@@ -56,13 +59,16 @@ int clamp_int(int in, int min, int max) {
 }
 
 void setServo(int angle1, int angle4) {
-  Serial.print("setting servo: ");
+  // Serial.print("setting servo: ");
+
   angle1 = clamp_int(angle1, 0, 180);
   angle4 = clamp_int(angle4, 0, 180);
-  Serial.print(angle1);
-  Serial.print(", ");
-  Serial.print(angle4);
-  Serial.print("\n");
+
+  // Serial.print(angle1);
+  // Serial.print(", ");
+  // Serial.print(angle4);
+  // Serial.print("\n");
+
   RR_setServo1(angle1);
   RR_setServo4(angle4);
 }
@@ -95,9 +101,9 @@ float getUltrasonic() {
   return RR_getUltrasonic();
 }
 
-bool isUltrasonicActivated() {
-  // make 100.0 a real number;
-  return getUltrasonic() > 100.0;
+bool ultrasonicSeesObject() {
+  float ult = getUltrasonic();
+  return ult < ULTRASONIC_SENSE_DISTANCE && ult > 0.0001;
 }
 
 void stopDrivetrain() {
@@ -107,29 +113,34 @@ void stopDrivetrain() {
 
 void arcadeDrive(float thrust, float rotation) {
   // rotation = clamp(rotation, -0.5, 0.5);
-  thrust = abs(thrust) > 0.005 ? thrust : 0;
-  rotation = abs(rotation) > 0.005 ? rotation : 0;
+  thrust = abs(thrust) > 0.001 ? thrust : 0;
+  rotation = abs(rotation) > 0.001 ? rotation : 0;
 
-  thrust = thrust * thrust * (thrust < 0.0 ? -1.0 : 1.0);
-  rotation = rotation * rotation * (rotation < 0.0 ? -1.0 : 1.0);
-
+  // thrust = thrust * thrust * (thrust < 0.0 ? -1.0 : 1.0);
+  // rotation = rotation * rotation * (rotation < 0.0 ? -1.0 : 1.0);
+  // Serial.print("driving power: ");
+  // Serial.print(clamp(thrust + rotation, -1.0, 1.0));
+  // Serial.print(" , ");
+  // Serial.print(clamp(thrust - rotation, -1.0, 1.0));
+  // Serial.print("\n");
   RR_setMotor1(clamp(thrust + rotation, -1.0, 1.0));
   RR_setMotor2(clamp(thrust - rotation, -1.0, 1.0));
 }
 
 void debugPrints(bool btnA, bool btnB, bool btnX, bool btnY) {
-  // Serial.print("Ultrasonic=");
-  // Serial.print(RR_getUltrasonic());
-  // Serial.print(" ;; ");
-  int sensors[6];
-
-  Serial.print("LINE SENSORS = ");
-  RR_getLineSensors(sensors);
-  for (int i = 0; i < 6; i++) {
-    Serial.print(sensors[i]);
-    Serial.print(" ");
-  }
+  Serial.print("Ultrasonic=");
+  Serial.print(RR_getUltrasonic());
   Serial.print("\n");
+  // Serial.print(" ;; ");
+  // int sensors[6];
+
+  // Serial.print("LINE SENSORS = ");
+  // RR_getLineSensors(sensors);
+  // for (int i = 0; i < 6; i++) {
+  //   Serial.print(sensors[i]);
+  //   Serial.print(" ");
+  // }
+  // Serial.print("\n");
   // delay(1000);
 
 
@@ -151,20 +162,56 @@ void scorePieceAuto() {
   setServoDefault();
 }
 
-void drivePastYellowAuto(int sensors[]) {
-  int start_time = millis();
-  while (millis() - start_time < 5000) {
+void drivePastYellowAuto(int sensors[], int start_time) {
+  if (millis() - start_time < 8000) {
     line_follow_pid(sensors);
+  } else {
+    isAuto = false;
   }
 }
 
-void driveScoreAuto(int sensors[]) {
-  int start_time = millis();
-  while (!isUltrasonicActivated()) {
+void driveScoreAuto(int sensors[], int start_time) {
+  float currTime = millis();
+  bool ult = false;
+  if (((int)currTime % 250) < 5.0 && currTime - start_time > 12000) {
+   ult = ultrasonicSeesObject();
+  }
+  if (!scoredPieceInAuto && !ult) {
     line_follow_pid(sensors);
+  } else if (!scoredPieceInAuto) {
+    Serial.print("SEE TARGET, SCORRE NOW\n");
+    scorePieceAuto();
+    scoredPieceInAuto = true;
+    isAuto = false;
+  }
+}
+
+void driveScoreAutoIndependent(int sensors[], int start_time) {
+  bool ult = false;
+  
+  if (isAuto) {
+    while (!ult) {
+      float currTime = millis();
+
+      RR_getLineSensors(sensors);
+      for (int i = 0; i < 6; i++) {
+        Serial.print(sensors[i]);
+        Serial.print(" ");
+      }
+      Serial.print("\n");
+
+      line_follow_pid(sensors);
+      ult = ultrasonicSeesObject();
+      delay(20);
+    } 
+    stopDrivetrain();
+
+    Serial.print("SEE TARGET, SCORRE NOW\n");
+    scorePieceAuto();
+    scoredPieceInAuto = true;
+    isAuto = false;
   }
   
-  scorePieceAuto();
 }
 
 void move_forward() {
@@ -200,6 +247,8 @@ void setup() {
 
   prevA = false;
   isAuto = false;
+  start_time = millis();
+  scoredPieceInAuto = false;
 }
 
 int temp = 0;
@@ -224,14 +273,28 @@ void loop() {
 
 
   // ------------------ SET AUTO ------------------
-  if (btnA && btnA != prevA) {
-    isAuto = !isAuto;
+  if (btnA) {
+    if (btnA != prevA) {
+      Serial.print("A changed");
+      start_time = millis();
+      isAuto = true;
+    }
+    
+    driveScoreAutoIndependent(sensors, start_time);
+  } else {
+    isAuto = false;
   }
 
-  if (isAuto) {
-    line_follow_pid(sensors);
-    debugPrints(btnA, btnB, btnX, btnY);
-  } else {
+  // debugPrints(btnA, btnB, btnX, btnY);
+  
+  // if (isAuto) {
+  //   // debugPrints(btnA, btnB, btnX, btnY);
+  //   // line_follow_pid(sensors);
+  //   // driveScoreAuto(sensors, start_time);
+  //   // delay(10);
+  // } else {
+  if (!isAuto) {
+
     // left bumper - intake
     if (btnLB && btnLB != prevLB) { //if the button is being pressed and it is just pressed
       if (isServoIntake) { //if the servo is in intake position
@@ -252,17 +315,19 @@ void loop() {
       isServoScore = !isServoScore;
       isServoIntake = false;
     } 
+    
 
     setServosToGlobal();
+    delay(20);
   }
   
 
   // This is important - it sleeps for 0.02 seconds (= 50 times / second)
   // Running the code too fast will overwhelm the microcontroller and peripherals
+
+  prevA = btnA;
   prevLB = btnLB;
   prevRB = btnRB;
-  prevA = btnA;
-  delay(20);
 }
 
 float process_sensors(int sensors[]) {
@@ -281,20 +346,14 @@ float process_sensors(int sensors[]) {
     sum += val;
   }
 
-
-  //Development: CASE ON YELLOW/BLUE LINE
   if (!on_line) {
-    if (lastVal < 5 * 500) {
-      return 5000.0;
-    } else {
-      return 0.0;
-    }
+    return lastVal < 2500 ? 5000.0 : 0.0;
   }
   
   lastVal = avg / sum;
-  Serial.print("sensor processed: ");
-  Serial.print(lastVal);
-  Serial.print("\n");
+  // Serial.print("sensor processed: ");
+  // Serial.print(lastVal);
+  // Serial.print("\n");
   return lastVal;
 }
 
@@ -305,9 +364,9 @@ void line_follow_pid(int sensors[]) {
   float error = LINE_SETPOINT - sensorVal;
   // error > 0 if too far left
 
-  if (error > 100) {
+  if (error > LINE_TOLERANCE) {
     Serial.print("GO RIGHT\n");
-  } else if (error < -100) {
+  } else if (error < -LINE_TOLERANCE) {
     Serial.print("GO LEFT\n");
   } else {
     Serial.print("We r ok\n");
@@ -319,7 +378,7 @@ void line_follow_pid(int sensors[]) {
   float adjust = error * kP + kD * (error - lastError);
   // adjust really big if error is really big, 
 
-  adjust = abs(error) < 100 ? 0 : adjust;
+  adjust = abs(error) < LINE_TOLERANCE ? 0 : adjust;
 
   lastError = error;
 
